@@ -62,10 +62,10 @@ def labour_by_hour(shifts): # Pattern : GROUP count
                 hours[hour] = 1
     return hours
 
-# shifts, flagged = load_shifts('data/shifts.csv')
-# labour = labour_by_hour(shifts)
-# print(labour)
-# print(sum(labour.values()))
+shifts, flagged = load_shifts('data/shifts.csv')
+labour = labour_by_hour(shifts)
+print(labour)
+print(sum(labour.values()))
 
 def sales_by_hour(orders):
     total_sales = {}
@@ -83,3 +83,13 @@ orders, skipped = load_orders('data/orders.csv')
 sales = sales_by_hour(orders)
 print(sales)                   # {12: 40.0, 13: 5.0, 17: 68.0, 18: 67.0, 19: 38.0, 20: 13.0, 21: 28.0}
 print(sum(sales.values()))     # 259.0
+
+def sales_per_labour_hour(sales, labour):
+    result = {}
+    for hour, staff in labour.items():
+        hour_sales = sales.get(hour, 0)
+        result[hour] = round(hour_sales/staff,2)
+    return result
+        
+splh = sales_per_labour_hour(sales,labour)
+print(splh)
