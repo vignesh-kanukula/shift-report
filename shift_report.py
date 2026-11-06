@@ -93,3 +93,20 @@ def sales_per_labour_hour(sales, labour):
         
 splh = sales_per_labour_hour(sales,labour)
 print(splh)
+
+def best_and_worst_hour(splh):
+    best = None
+    worst = None
+    best_value = 0
+    worst_value = None
+    for hour, value in splh.items():
+        if value > best_value:
+            best_value = value
+            best = hour
+        if worst_value is None or value < worst_value:
+            worst_value = value
+            worst = hour
+    return best,worst
+
+best, worst = best_and_worst_hour(splh)
+print(best, worst)            # expected: 17 14
