@@ -23,6 +23,7 @@ def load_orders(path):
             else:
                 row['price'] = price
                 row['qty'] = int(row['qty'])
+                row['time'] = parse_time(row['time'])
                 good_orders.append(row)
         return good_orders, count
 
@@ -61,7 +62,24 @@ def labour_by_hour(shifts): # Pattern : GROUP count
                 hours[hour] = 1
     return hours
 
-shifts, flagged = load_shifts('data/shifts.csv')
-labour = labour_by_hour(shifts)
-print(labour)
-print(sum(labour.values()))
+# shifts, flagged = load_shifts('data/shifts.csv')
+# labour = labour_by_hour(shifts)
+# print(labour)
+# print(sum(labour.values()))
+
+def sales_by_hour(orders):
+    total_sales = {}
+    for order in orders:
+        if order['status'] == 'completed':
+            hour = order['time'].hour
+            amount = order['qty'] * order['price']
+            if hour in total_sales:
+                total_sales[hour] += amount
+            else:
+                total_sales[hour] = amount
+    return total_sales
+
+orders, skipped = load_orders('data/orders.csv')
+sales = sales_by_hour(orders)
+print(sales)                   # {12: 40.0, 13: 5.0, 17: 68.0, 18: 67.0, 19: 38.0, 20: 13.0, 21: 28.0}
+print(sum(sales.values()))     # 259.0
