@@ -110,3 +110,37 @@ def best_and_worst_hour(splh):
 
 best, worst = best_and_worst_hour(splh)
 print(best, worst)            # expected: 17 14
+
+def lost_orders(orders):
+    lost = []
+    for order in orders:
+        if order['status'] in ('cancelled', 'refunded'):
+            lost.append(order)
+    return lost
+lost = lost_orders(orders)
+print(len(lost))
+
+def lost_by_hour(lost):
+    counts = {}
+    for order in lost:
+        hour  = order['time'].hour
+        if hour in counts:
+            counts[hour] += 1
+        else:
+            counts[hour] = 1
+    return counts
+print(lost_by_hour(lost))
+
+def lost_by_reason(lost):
+    reasons = {}
+    for order in lost:
+        reason = order['cancel_reason']
+        if reason in reasons:
+            reasons[reason] += 1
+        else:
+            reasons[reason] = 1
+
+    return reasons
+
+print(lost_by_reason(lost))
+print(sum(o['qty'] * o['price'] for o in lost))   # lost value: 66.0
