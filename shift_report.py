@@ -47,6 +47,21 @@ def load_shifts(path):
 
         return good_shifts, flagged
     
+# shifts, flagged = load_shifts('data/shifts.csv')
+# print(len(shifts), flagged)               # expected: 5 ['S5']
+# print(shifts[0]['start'].hour)            # expected: 12
+
+def labour_by_hour(shifts): # Pattern : GROUP count
+    hours = {}
+    for shift in shifts:
+        for hour in range(shift['start'].hour,shift['end'].hour):
+            if hour in hours:
+                hours[hour] += 1
+            else:
+                hours[hour] = 1
+    return hours
+
 shifts, flagged = load_shifts('data/shifts.csv')
-print(len(shifts), flagged)               # expected: 5 ['S5']
-print(shifts[0]['start'].hour)            # expected: 12
+labour = labour_by_hour(shifts)
+print(labour)
+print(sum(labour.values()))
