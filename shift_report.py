@@ -2,7 +2,7 @@
 # shifts.csv line 6 - driver end col is missing
 
 import csv
-from datetime import datetime, date
+from datetime import datetime
 
 def safe_float(text):
     try:
@@ -27,9 +27,6 @@ def load_orders(path):
                 good_orders.append(row)
         return good_orders, count
 
-# orders, skipped = load_orders('data/orders.csv')
-# print(len(orders), skipped)      # expected: 17 1
-
 def parse_time(text):
     return datetime.strptime(text, '%Y-%m-%d %H:%M')
 
@@ -48,10 +45,6 @@ def load_shifts(path):
 
         return good_shifts, flagged
     
-# shifts, flagged = load_shifts('data/shifts.csv')
-# print(len(shifts), flagged)               # expected: 5 ['S5']
-# print(shifts[0]['start'].hour)            # expected: 12
-
 def labour_by_hour(shifts): # Pattern : GROUP count
     hours = {}
     for shift in shifts:
@@ -62,12 +55,7 @@ def labour_by_hour(shifts): # Pattern : GROUP count
                 hours[hour] = 1
     return hours
 
-shifts, flagged = load_shifts('data/shifts.csv')
-labour = labour_by_hour(shifts)
-print(labour)
-print(sum(labour.values()))
-
-def sales_by_hour(orders):
+def sales_by_hour(orders): # Pattern : GROUP BY
     total_sales = {}
     for order in orders:
         if order['status'] == 'completed':
@@ -79,22 +67,21 @@ def sales_by_hour(orders):
                 total_sales[hour] = amount
     return total_sales
 
-orders, skipped = load_orders('data/orders.csv')
-sales = sales_by_hour(orders)
-print(sales)                   # {12: 40.0, 13: 5.0, 17: 68.0, 18: 67.0, 19: 38.0, 20: 13.0, 21: 28.0}
-print(sum(sales.values()))     # 259.0
-
-def sales_per_labour_hour(sales, labour):
+def sales_per_labour_hour(sales, labour): # Pattern : TRANSFORM + LOOKUP
     result = {}
     for hour, staff in labour.items():
         hour_sales = sales.get(hour, 0)
         result[hour] = round(hour_sales/staff,2)
     return result
-        
-splh = sales_per_labour_hour(sales,labour)
-print(splh)
 
-def best_and_worst_hour(splh):
+def count_completed(orders):        # Pattern: FILTER + COUNT
+    count = 0
+    for order in orders:
+        if order['status'] == 'completed':
+            count += 1
+    return count
+
+def best_and_worst_hour(splh): # Pattern : BEST SO FAR
     best = None
     worst = None
     best_value = 0
@@ -108,19 +95,24 @@ def best_and_worst_hour(splh):
             worst = hour
     return best,worst
 
-best, worst = best_and_worst_hour(splh)
-print(best, worst)            # expected: 17 14
+def busiest_hour(sales): # Pattern: BEST SO FAR (highest)
+    busy = None
+    busy_value = 0
+    for hour, value in sales.items():
+        if value > busy_value:
+            busy_value = value
+            busy = hour
+    return busy
 
-def lost_orders(orders):
+
+def lost_orders(orders): # pattern : FILTER
     lost = []
     for order in orders:
         if order['status'] in ('cancelled', 'refunded'):
             lost.append(order)
     return lost
-lost = lost_orders(orders)
-print(len(lost))
 
-def lost_by_hour(lost):
+def lost_by_hour(lost): # pattern : GROUP count
     counts = {}
     for order in lost:
         hour  = order['time'].hour
@@ -129,9 +121,8 @@ def lost_by_hour(lost):
         else:
             counts[hour] = 1
     return counts
-print(lost_by_hour(lost))
 
-def lost_by_reason(lost):
+def lost_by_reason(lost): # pattern : GROUP count
     reasons = {}
     for order in lost:
         reason = order['cancel_reason']
@@ -139,8 +130,57 @@ def lost_by_reason(lost):
             reasons[reason] += 1
         else:
             reasons[reason] = 1
-
     return reasons
 
-print(lost_by_reason(lost))
-print(sum(o['qty'] * o['price'] for o in lost))   # lost value: 66.0
+def by_count(pair):
+    return pair[1]
+
+def units_by_item(orders): # GROUP total
+    units = {}
+    for order in orders:
+        if order['status'] == 'completed':  
+            item = order['item']
+            qty = order['qty']
+            if item in units:
+                units[item] += qty
+            else:
+                units[item] = qty
+    return units
+
+def print_report(orders, shifts, skipped, flagged):
+
+    sales = sales_by_hour(orders)
+    labour = labour_by_hour(shifts)
+    splh = sales_per_labour_hour(sales, labour)
+    best, worst = best_and_worst_hour(splh)
+    lost = lost_orders(orders)
+    units = units_by_item(orders)
+    ranked = sorted(units.items(), key=by_count, reverse=True)
+    completed = count_completed(orders)
+    peak = busiest_hour(sales)
+
+    print()
+    print('SPACE PIZZA - Shift Report - 2026-11-05')
+    print(f'Orders loaded: {len(orders)} ({skipped} skipped: missing price)')
+    print(f"Shifts loaded: {len(shifts)} (flagged, no clock-out: {', '.join(flagged)})")
+    print()
+    print(f'Total sales: {sum(sales.values()):.2f} from {completed} completed orders')
+    print(f'Busiest hour: {peak}:00 ({sales[peak]:.2f})')
+    print(f'Labour hours: {sum(labour.values())}')
+    print(f'Best hour (sales per labour hour): {best}:00 ({splh[best]:.2f})')
+    print(f'Worst hour (sales per labour hour): {worst}:00 ({splh[worst]:.2f})')
+    print()
+    print(f"Lost orders: {len(lost)} ({(sum(o['qty'] * o['price'] for o in lost)):.2f})")
+    print('By reason:')
+    reasons = lost_by_reason(lost)
+    for reason, count in reasons.items():
+        print(f'    {reason}: {count}')
+    print()
+    best_name, best_qty = ranked[0]
+    worst_name, worst_qty = ranked[-1]
+    print(f'Best seller: {best_name} ({best_qty})')
+    print(f'Worst seller: {worst_name} ({worst_qty})')
+
+shifts, flagged = load_shifts('data/shifts.csv')
+orders, skipped = load_orders('data/orders.csv')
+print_report(orders,shifts,skipped,flagged)
