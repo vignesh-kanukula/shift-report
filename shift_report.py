@@ -3,7 +3,7 @@
 
 import csv
 from datetime import datetime
-
+import os
 def safe_float(text):
     try:
         return float(text)
@@ -147,6 +147,23 @@ def units_by_item(orders): # GROUP total
                 units[item] = qty
     return units
 
+def save_hourly_csv(sales, labour, splh, path): # Pattern : TRANSFORM + LOOKUP
+    with open(path, 'w' , newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=['hour', 'sales', 'staff', 'sales_per_labour_hour'])
+        writer.writeheader()
+
+        for hour, value in splh.items():
+            staff = labour[hour]
+            hour_sales = sales.get(hour, 0.0)
+            writer.writerow({
+                'hour': hour,
+                'sales': round(hour_sales,2),
+                'staff': staff,
+                'sales_per_labour_hour': value
+            })
+
+
+
 def print_report(orders, shifts, skipped, flagged):
 
     sales = sales_by_hour(orders)
@@ -158,7 +175,8 @@ def print_report(orders, shifts, skipped, flagged):
     ranked = sorted(units.items(), key=by_count, reverse=True)
     completed = count_completed(orders)
     peak = busiest_hour(sales)
-
+    save = save_hourly_csv(sales, labour, splh, 'reports/hourly.csv')
+    print(save)
     print()
     print('SPACE PIZZA - Shift Report - 2026-11-05')
     print(f'Orders loaded: {len(orders)} ({skipped} skipped: missing price)')
