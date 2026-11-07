@@ -171,7 +171,7 @@ def print_report(orders, shifts, skipped, flagged):
     print(f'Worst hour (sales per labour hour): {worst}:00 ({splh[worst]:.2f})')
     print()
     print(f"Lost orders: {len(lost)} ({(sum(o['qty'] * o['price'] for o in lost)):.2f})")
-    print('By reason:')
+    print('  By reason:')
     reasons = lost_by_reason(lost)
     for reason, count in reasons.items():
         print(f'    {reason}: {count}')
