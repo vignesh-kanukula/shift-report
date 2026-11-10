@@ -3,7 +3,10 @@
 
 import csv
 from datetime import datetime
-import os
+import os 
+import json
+
+
 def safe_float(text):
     try:
         return float(text)
@@ -36,7 +39,7 @@ def load_shifts(path):
     with open(path) as file:
         reader = csv.DictReader(file)
         for row in reader:
-            if row['end'] == '':
+            if not row['start'] or not row['end'] :
                flagged.append(row['staff_id'])
             else:
                row['start'] = parse_time(row['start'])
@@ -162,6 +165,45 @@ def save_hourly_csv(sales, labour, splh, path): # Pattern : TRANSFORM + LOOKUP
                 'sales_per_labour_hour': value
             })
 
+def shift_hours(start_text, end_text):   # Pattern: TRANSFORM
+
+    if not end_text :
+        return None
+    
+    start = parse_time(start_text)
+    end = parse_time(end_text)
+    hours = (end - start).total_seconds() / 3600
+    return round(hours, 2)
+
+
+def build_summary(sales, labour, completed, peak, best, worst, lost, reasons, ranked):
+ # in: values already calculated in print_report → out: one dict of headline numbers
+
+    best_name, best_qty = ranked[0]
+    worst_name, worst_qty = ranked[-1]
+    summary = {
+        'report_date': '2026-11-05',
+        'completed_orders': completed,
+        'total_sales' :  round(sum(sales.values()),2),
+        'busiest_hour': peak,
+        'busiest_hour_sales': sales[peak] ,
+        'labour_hours': sum(labour.values()),
+        'best_splh_hour':best,
+        'worst_splh_hour': worst,
+        'lost_orders': len(lost),
+        'lost_value': round(sum(o['qty'] * o['price'] for o in lost), 2),
+        'lost_by_reason' : reasons,
+        'best_seller' : {'name': best_name, 'qty': best_qty},
+        'worst_seller' : {'name' : worst_name, 'qty' : worst_qty},
+        
+    }
+    return summary
+    
+    
+def save_json(summary, path):      
+# in: summary dict + path → out: JSON file at path, returns None              
+    with open(path, 'w') as file:
+        json.dump(summary, file, indent=2)
 
 
 def print_report(orders, shifts, skipped, flagged):
@@ -175,9 +217,7 @@ def print_report(orders, shifts, skipped, flagged):
     ranked = sorted(units.items(), key=by_count, reverse=True)
     completed = count_completed(orders)
     peak = busiest_hour(sales)
-    save = save_hourly_csv(sales, labour, splh, 'reports/hourly.csv')
-    print(save)
-    print()
+    
     print('SPACE PIZZA - Shift Report - 2026-11-05')
     print(f'Orders loaded: {len(orders)} ({skipped} skipped: missing price)')
     print(f"Shifts loaded: {len(shifts)} (flagged, no clock-out: {', '.join(flagged)})")
@@ -198,7 +238,13 @@ def print_report(orders, shifts, skipped, flagged):
     worst_name, worst_qty = ranked[-1]
     print(f'Best seller: {best_name} ({best_qty})')
     print(f'Worst seller: {worst_name} ({worst_qty})')
+    
+    save_hourly_csv(sales, labour, splh, 'reports/hourly.csv')
+    summary = build_summary(sales, labour, completed, peak, best, worst, lost, reasons, ranked)
+    save_json(summary, 'reports/summary.json')
 
+    
+os.makedirs('reports', exist_ok=True)       
 shifts, flagged = load_shifts('data/shifts.csv')
 orders, skipped = load_orders('data/orders.csv')
 print_report(orders,shifts,skipped,flagged)
