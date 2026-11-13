@@ -65,4 +65,38 @@ print(len(all_records), skipped)                          # expect 31 4
 print(all_records[0]['week'], all_records[0]['day'])      # expect W1 Mon
 print(all_records[-1]['week'], all_records[-1]['day'])    # expect W5 Wed
 print(sum(r['Actual Sales'] for r in all_records))        # expect 77696
-    
+
+def days_over_labour(all_records): # pattern :  FILTER
+    # in: list of day-records → out: list of (week, day) where actual labour % > budgeted
+    # 1. start an empty list
+    over_used = []
+     # 2. loop over every day-record
+    for record in all_records:
+    # 3.   if actual labour % is above budget → add (week, day)
+        if record['Actual Labour %'] > record['Budgeted Labour %']:
+            over_used.append((record['week'], record['day']))
+        # 4. return the list
+    return over_used
+over_used = days_over_labour(all_records)
+print(over_used)
+
+def monthly_labour_pct(all_records): # pattern : ACCUMULATE 
+    # in: list of day-records → out: each days labour = sales x labour% add and divide by total sales
+    # 1. start the initial count = 0
+    total_labour = 0
+    total_sales = 0
+    # 2 loop over day-records 
+    for record in all_records:
+        sales = record['Actual Sales']
+        labour = record['Actual Labour %']
+        total_sales += sales
+        total_labour += sales * labour
+    #return final count
+    return round(total_labour/total_sales * 100, 2)
+labour_cost = monthly_labour_pct(all_records)
+print(labour_cost)
+
+
+
+
+
