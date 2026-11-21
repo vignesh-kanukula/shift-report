@@ -15,9 +15,9 @@ The data used for this project is made up data, but modelled on real store layou
 In: `data/orders.csv` + `data/shifts.csv` → Out: printed report, `reports/hourly.csv`, `reports/summary.json`
 Handles messy rows: missing price (skipped and counted), missing clock-out (flagged).
 
-### 2. Hourly targets (`labour_report.py`) — in progress
-In: `data/hourly_sheet.xlsx` → Out: pizzas actual vs target for each hour.
-Hours with missing data are listed separately instead of being silently dropped.
+### 2. Hourly targets (`labour_report.py`)
+In: `data/hourly_sheet.xlsx` → Out: printed report + `reports/labour_summary.json`
+Compares actual vs target for pizzas and deliveries, and actual vs rostered hours for in-store staff and drivers, hour by hour. Hours with missing data are listed separately, not silently dropped.
 
 ### 3. Monthly labour report (`monthly_report.py`)
 In: `data/monthly_summary.xlsx` (5 tabs, days as columns) → Out: printed report + `reports/monthly_summary.json`
