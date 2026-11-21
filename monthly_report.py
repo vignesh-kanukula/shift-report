@@ -7,8 +7,6 @@ import os
 # skip: rows 1-5 (title), column A (empty), column J (Week to Date total)
 # empty day means: Actual sales is None
 
-# IN : one tab at time (worksheet)
-# out : list of record days, skip empty days and count 
 
 def load_week(ws):   # Pattern: TRANSFORM (wide → long) + FILTER + COUNT
     # in: one worksheet (one week tab) → out: list of day-records (empty days skipped), number of days skipped
@@ -75,9 +73,9 @@ def monthly_labour_pct(all_records): # pattern : ACCUMULATE  (weighted average)
     total_sales = 0
     # 2 loop over day-records 
     for record in all_records:
+        # 3. after the loop: labour € ÷ sales € × 100
         sales = record['Actual Sales']
         labour = record['Actual Labour %']
-        # 3. after the loop: labour € ÷ sales € × 100
         total_sales += sales
         total_labour += sales * labour
     #return final count
@@ -117,14 +115,14 @@ def best_key(values):   # Pattern: BEST SO FAR (highest)
             best = key
     return best
 
-def simple_labour_pct(records): # pattern : ACCUMULATE
-    # IN : list of day records , OUT : daily labour % 
+def simple_labour_pct(records):   # Pattern: ACCUMULATE (simple average — the WRONG method, for comparison)
+    # in: list of day-records → out: plain average of daily labour %, as a percentage
     # 1. add up every day's labour % (no sales involved)
     total_pct = sum(r['Actual Labour %'] for r in records)
-     # 2. divide by how many days
+    # 2. divide by how many days
+    average = total_pct / len(records)
     # 3. turn the fraction into a percentage, 2 decimals
-    return round(total_pct / len(records) * 100, 2)
- 
+    return round(average * 100, 2)
 
 def build_monthly_summary(records, skipped):   # Pattern: TRANSFORM (calculations → one dict)
     # in: list of day-records + skipped count → out: one dict of headline numbers
@@ -157,6 +155,7 @@ def save_json(summary, path):
         json.dump(summary, file, indent=2)
 
 def print_monthly_report(summary):
+    # in: summary dict → out: prints the report, returns None.
     s = summary
     print(f"SPACE PIZZA - Monthly Report (W1-W5)")
     print(f'Days loaded: {s['days_loaded']} ({s['skipped']} empty days skipped)')
